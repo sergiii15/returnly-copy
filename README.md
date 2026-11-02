@@ -1,6 +1,6 @@
 # Returnly
 
-The Application gives users the ability to submit posts with pictures, descriptions and add a location on the map when they are looking for a lost item, report an item that was found, or browse through other lost-and-found posts; all within the same application.
+Returnly is a lost-and-found web application developed using Flutter, Dart, and Firebase. The platform allows users to report lost or found items, upload photos, browse posts, and communicate through in-app messaging. Its goal is to simplify item recovery by connecting people who have lost belongings with those who have found them.
 
 ## Features
 
