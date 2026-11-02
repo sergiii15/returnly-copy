@@ -14,22 +14,29 @@ Returnly is a lost-and-found web application developed using Flutter, Dart, and 
 - **User Profiles:** View and manage personal posts.
 
 
+
 ## Tech Stack
 
-- Flutter
-- Dart
-- Firebase Authentication
-- Cloud Firestore
-- Firebase Storage
-- GitHub
+- **Flutter:** Framework for building the web application's user interface.
+- **Dart:** Programming language used to develop the application.
+- **Firebase Authentication:** User registration, login, and authentication.
+- **Cloud Firestore:** Cloud database for storing posts, user information, and chat data.
+- **Firebase Cloud Storage:** Storage and retrieval of uploaded item images.
+- **Google Maps:** Map integration for meetup coordination and location selection.
+- **Git & GitHub:** Version control and source code management.
+
+
 
 ## Project Structure
 
+The application is organized into separate directories to keep the code structured and maintainable.
+
 ```text
 lib/
-  models/
-  screens/
-  services/
-  widgets/
-  main.dart
-  firebase_options.dart
+  models/               # Application data models
+  screens/              # Application screens and pages
+  services/             # Backend and Firebase services
+  widgets/              # Reusable UI components
+  main.dart              # Application entry point
+  firebase_options.dart  # Firebase configuration
+```
