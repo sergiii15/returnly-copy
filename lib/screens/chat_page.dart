@@ -39,11 +39,18 @@ class _ChatPageState extends State<ChatPage> {
 
     try {
       await chatService.sendMessage(
-        otherUserId: widget.otherUserId,
-        otherUserEmail: widget.otherUserEmail,
-        itemTitle: widget.itemTitle,
-        message: text,
-      );
+  otherUserId: widget.otherUserId,
+  otherUserEmail: widget.otherUserEmail,
+  itemTitle: widget.itemTitle,
+  message: text,
+).timeout(
+  const Duration(seconds: 15),
+  onTimeout: () {
+    throw TimeoutException(
+      'Firestore did not complete the message transaction within 15 seconds.',
+    );
+  },
+);
 
       if (!mounted) return;
       messageController.clear();
