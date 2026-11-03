@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'main_navigation_page.dart';
 import 'signup_page.dart';
-import 'phone_verification_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -48,39 +47,13 @@ class _LoginPageState extends State<LoginPage> {
         throw StateError('User session not found after login.');
       }
 
-      // Refresh the account information from Firebase.
-      await user.reload();
-
-      final updatedUser = FirebaseAuth.instance.currentUser;
-
-      if (updatedUser == null) {
-        throw StateError('Unable to load user information.');
-      }
-
-      // Check if the phone number is already linked.
-      final bool phoneVerified =
-          updatedUser.phoneNumber != null &&
-          updatedUser.phoneNumber!.isNotEmpty;
-
-      if (!mounted) return;
-
-      if (phoneVerified) {
-        // Phone already linked: enter Returnly directly.
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const MainNavigationPage(),
-          ),
-        );
-      } else {
-        // No linked phone: go to phone verification.
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const PhoneVerificationPage(),
-          ),
-        );
-      }
+      // Phone verification is optional.
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const MainNavigationPage(),
+        ),
+      );
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
 
