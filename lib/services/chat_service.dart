@@ -40,10 +40,23 @@ class ChatService {
     required String itemTitle,
     required String message,
   }) async {
-    final currentUser = _auth.currentUser!;
+    final currentUser = _auth.currentUser;
 
-    final chatRoomId =
-        getChatRoomId(currentUser.uid, otherUserId);
+    if (currentUser == null || currentUser.email == null) {
+      throw StateError('User must be signed in.');
+    }
+
+    final cleanMessage = message.trim();
+
+    if (cleanMessage.isEmpty || cleanMessage.length > 2000) {
+      throw ArgumentError('Message must contain 1-2000 characters.');
+    }
+
+    if (otherUserId == currentUser.uid) {
+      throw ArgumentError('Cannot send a message to yourself.');
+    }
+
+    final chatRoomId = getChatRoomId(currentUser.uid, otherUserId);
 
     final chatRoomRef =
         _firestore.collection('chat_rooms').doc(chatRoomId);
@@ -51,27 +64,48 @@ class ChatService {
     final messageRef =
         chatRoomRef.collection('messages').doc();
 
-    final batch = _firestore.batch();
+    await _firestore.runTransaction((transaction) async {
+      final chatRoomSnapshot = await transaction.get(chatRoomRef);
 
-    batch.set(chatRoomRef, {
-      'users': [currentUser.uid, otherUserId],
-      'userEmails': {
-        currentUser.uid: currentUser.email,
-        otherUserId: otherUserEmail,
-      },
-      'itemTitle': itemTitle,
-      'lastMessage': message,
-      'lastTimestamp': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+      if (chatRoomSnapshot.exists) {
+        final users = List<String>.from(
+          chatRoomSnapshot.data()?['users'] ?? [],
+        );
 
-    batch.set(messageRef, {
-      'senderId': currentUser.uid,
-      'senderEmail': currentUser.email,
-      'receiverId': otherUserId,
-      'message': message,
-      'timestamp': FieldValue.serverTimestamp(),
+        if (users.length != 2 ||
+            !users.contains(currentUser.uid) ||
+            !users.contains(otherUserId)) {
+          throw StateError('Invalid chat room participants.');
+        }
+
+        transaction.update(chatRoomRef, {
+          'lastMessage': cleanMessage,
+          'lastMessageId': messageRef.id,
+          'lastTimestamp': FieldValue.serverTimestamp(),
+        });
+      } else {
+        final users = [currentUser.uid, otherUserId]..sort();
+
+        transaction.set(chatRoomRef, {
+          'users': users,
+          'userEmails': {
+            currentUser.uid: currentUser.email,
+            otherUserId: otherUserEmail,
+          },
+          'itemTitle': itemTitle,
+          'lastMessage': cleanMessage,
+          'lastMessageId': messageRef.id,
+          'lastTimestamp': FieldValue.serverTimestamp(),
+        });
+      }
+
+      transaction.set(messageRef, {
+        'senderId': currentUser.uid,
+        'senderEmail': currentUser.email,
+        'receiverId': otherUserId,
+        'message': cleanMessage,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
     });
-
-    await batch.commit();
   }
 }
