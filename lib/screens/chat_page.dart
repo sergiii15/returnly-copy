@@ -33,6 +33,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> sendMessage() async {
+    debugPrint('CHAT DEBUG: Send button pressed');
     final text = messageController.text.trim();
     if (text.isEmpty) return;
 
