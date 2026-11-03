@@ -1,1 +1,38 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"returnly-f592d","appId":"1:534952957358:android:b03443ee09b7d768f2e43f","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"returnly-f592d","configurations":{"android":"1:534952957358:android:b03443ee09b7d768f2e43f","ios":"1:534952957358:ios:6f0f3bb00d75a3d6f2e43f","macos":"1:534952957358:ios:6f0f3bb00d75a3d6f2e43f","web":"1:534952957358:web:7d30886f4545f2f0f2e43f","windows":"1:534952957358:web:bddfda447f37224ef2e43f"}}}}}}
+{
+    "flutter":  {
+                    "platforms":  {
+                                      "android":  {
+                                                      "default":  {
+                                                                      "projectId":  "returnly-f592d",
+                                                                      "appId":  "1:534952957358:android:b03443ee09b7d768f2e43f",
+                                                                      "fileOutput":  "android/app/google-services.json"
+                                                                  }
+                                                  },
+                                      "dart":  {
+                                                   "lib/firebase_options.dart":  {
+                                                                                     "projectId":  "returnly-f592d",
+                                                                                     "configurations":  {
+                                                                                                            "android":  "1:534952957358:android:b03443ee09b7d768f2e43f",
+                                                                                                            "ios":  "1:534952957358:ios:6f0f3bb00d75a3d6f2e43f",
+                                                                                                            "macos":  "1:534952957358:ios:6f0f3bb00d75a3d6f2e43f",
+                                                                                                            "web":  "1:534952957358:web:7d30886f4545f2f0f2e43f",
+                                                                                                            "windows":  "1:534952957358:web:bddfda447f37224ef2e43f"
+                                                                                                        }
+                                                                                 }
+                                               }
+                                  }
+                },
+    "firestore":  {
+                      "rules":  "firestore.rules"
+                  },
+    "emulators":  {
+                      "firestore":  {
+                                        "host":  "127.0.0.1",
+                                        "port":  8080
+                                    },
+                      "ui":  {
+                                 "port":  4000,
+                                 "enabled":  true
+                             }
+                  }
+}
