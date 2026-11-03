@@ -33,18 +33,33 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> sendMessage() async {
-    if (messageController.text.trim().isEmpty) return;
+    final text = messageController.text.trim();
+    if (text.isEmpty) return;
 
-    await chatService.sendMessage(
-      otherUserId: widget.otherUserId,
-      otherUserEmail: widget.otherUserEmail,
-      itemTitle: widget.itemTitle,
-      message: messageController.text.trim(),
-    );
+    try {
+      await chatService.sendMessage(
+        otherUserId: widget.otherUserId,
+        otherUserEmail: widget.otherUserEmail,
+        itemTitle: widget.itemTitle,
+        message: text,
+      );
 
-    messageController.clear();
+      if (!mounted) return;
+      messageController.clear();
+    } on FirebaseException catch (e) {
+      debugPrint('CHAT ERROR: ${e.plugin} / ${e.code} / ${e.message}');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Message failed: ${e.code}')),
+      );
+    } catch (e) {
+      debugPrint('CHAT ERROR: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Message could not be sent.')),
+      );
+    }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
