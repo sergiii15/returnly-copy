@@ -62,12 +62,15 @@ class _ChatPageState extends State<ChatPage> {
         SnackBar(content: Text('Message failed: ${e.code}')),
       );
     } catch (e) {
-      debugPrint('CHAT ERROR: $e');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Message could not be sent.')),
-      );
-    }
+  debugPrint('CHAT ERROR: $e');
+  if (!mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text('Message error: $e'),
+      duration: const Duration(seconds: 10),
+    ),
+  );
+}
   }
   @override
   Widget build(BuildContext context) {
