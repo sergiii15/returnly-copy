@@ -1,3 +1,4 @@
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -40,9 +41,19 @@ class ChatService {
     required String message,
   }) async {
     final currentUser = _auth.currentUser!;
-    final chatRoomId = getChatRoomId(currentUser.uid, otherUserId);
 
-    await _firestore.collection('chat_rooms').doc(chatRoomId).set({
+    final chatRoomId =
+        getChatRoomId(currentUser.uid, otherUserId);
+
+    final chatRoomRef =
+        _firestore.collection('chat_rooms').doc(chatRoomId);
+
+    final messageRef =
+        chatRoomRef.collection('messages').doc();
+
+    final batch = _firestore.batch();
+
+    batch.set(chatRoomRef, {
       'users': [currentUser.uid, otherUserId],
       'userEmails': {
         currentUser.uid: currentUser.email,
@@ -53,16 +64,14 @@ class ChatService {
       'lastTimestamp': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
-    await _firestore
-        .collection('chat_rooms')
-        .doc(chatRoomId)
-        .collection('messages')
-        .add({
+    batch.set(messageRef, {
       'senderId': currentUser.uid,
       'senderEmail': currentUser.email,
       'receiverId': otherUserId,
       'message': message,
       'timestamp': FieldValue.serverTimestamp(),
     });
+
+    await batch.commit();
   }
 }
