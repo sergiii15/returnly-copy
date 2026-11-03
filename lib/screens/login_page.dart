@@ -1,4 +1,7 @@
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
 import '../services/auth_service.dart';
 import 'main_navigation_page.dart';
 import 'signup_page.dart';
@@ -27,6 +30,8 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> loginUser() async {
+    if (isLoading) return;
+
     setState(() {
       isLoading = true;
     });
@@ -37,12 +42,52 @@ class _LoginPageState extends State<LoginPage> {
         password: passwordController.text.trim(),
       );
 
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user == null) {
+        throw StateError('User session not found after login.');
+      }
+
+      // Refresh the account information from Firebase.
+      await user.reload();
+
+      final updatedUser = FirebaseAuth.instance.currentUser;
+
+      if (updatedUser == null) {
+        throw StateError('Unable to load user information.');
+      }
+
+      // Check if the phone number is already linked.
+      final bool phoneVerified =
+          updatedUser.phoneNumber != null &&
+          updatedUser.phoneNumber!.isNotEmpty;
+
       if (!mounted) return;
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const PhoneVerificationPage(),
+      if (phoneVerified) {
+        // Phone already linked: enter Returnly directly.
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const MainNavigationPage(),
+          ),
+        );
+      } else {
+        // No linked phone: go to phone verification.
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const PhoneVerificationPage(),
+          ),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Login failed: ${e.message ?? e.code}'),
+          duration: const Duration(seconds: 6),
         ),
       );
     } catch (e) {
@@ -51,15 +96,16 @@ class _LoginPageState extends State<LoginPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Login failed: $e'),
+          duration: const Duration(seconds: 6),
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
-
-    if (!mounted) return;
-
-    setState(() {
-      isLoading = false;
-    });
   }
 
   @override
@@ -101,6 +147,7 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 35),
                 TextField(
                   controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
                     labelText: 'Email',
                     prefixIcon: Icon(Icons.email_outlined),
