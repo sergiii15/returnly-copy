@@ -1,7 +1,9 @@
+
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'dart:async';
 
 import '../services/chat_service.dart';
 
@@ -27,6 +29,8 @@ class _ChatPageState extends State<ChatPage> {
 
   final currentUser = FirebaseAuth.instance.currentUser!;
 
+  bool isSending = false;
+
   @override
   void dispose() {
     messageController.dispose();
@@ -34,44 +38,86 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> sendMessage() async {
-    debugPrint('CHAT DEBUG: Send button pressed');
+    if (isSending) return;
+
     final text = messageController.text.trim();
+
     if (text.isEmpty) return;
+
+    debugPrint('CHAT DEBUG: Send button pressed');
+
+    setState(() {
+      isSending = true;
+    });
 
     try {
       await chatService.sendMessage(
-  otherUserId: widget.otherUserId,
-  otherUserEmail: widget.otherUserEmail,
-  itemTitle: widget.itemTitle,
-  message: text,
-).timeout(
-  const Duration(seconds: 15),
-  onTimeout: () {
-    throw TimeoutException(
-      'Firestore did not complete the message transaction within 15 seconds.',
-    );
-  },
-);
+        otherUserId: widget.otherUserId,
+        otherUserEmail: widget.otherUserEmail,
+        itemTitle: widget.itemTitle,
+        message: text,
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException(
+            'Firestore did not complete the message transaction within 15 seconds.',
+          );
+        },
+      );
+
+      debugPrint('CHAT DEBUG: Message sent successfully');
 
       if (!mounted) return;
+
       messageController.clear();
     } on FirebaseException catch (e) {
-      debugPrint('CHAT ERROR: ${e.plugin} / ${e.code} / ${e.message}');
+      debugPrint(
+        'CHAT ERROR: ${e.plugin} / ${e.code} / ${e.message}',
+      );
+
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Message failed: ${e.code}')),
+        SnackBar(
+          content: Text(
+            'Message failed: ${e.code} - ${e.message ?? "Unknown error"}',
+          ),
+          duration: const Duration(seconds: 10),
+        ),
+      );
+    } on TimeoutException catch (e) {
+      debugPrint('CHAT TIMEOUT: $e');
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Message is taking too long. Check the chat before trying again.',
+          ),
+          duration: Duration(seconds: 10),
+        ),
       );
     } catch (e) {
-  debugPrint('CHAT ERROR: $e');
-  if (!mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text('Message error: $e'),
-      duration: const Duration(seconds: 10),
-    ),
-  );
-}
+      debugPrint('CHAT ERROR: $e');
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Message error: $e'),
+          duration: const Duration(seconds: 10),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isSending = false;
+        });
+      }
+    }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -84,7 +130,10 @@ class _ChatPageState extends State<ChatPage> {
             padding: const EdgeInsets.all(12.0),
             child: Text(
               'Chat about: ${widget.itemTitle}',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           Expanded(
@@ -92,18 +141,25 @@ class _ChatPageState extends State<ChatPage> {
               stream: chatService.getMessages(widget.otherUserId),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
-                  return const Center(child: Text('Error loading messages'));
+                  return const Center(
+                    child: Text('Error loading messages'),
+                  );
                 }
 
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                if (snapshot.connectionState ==
+                    ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
                 }
 
-                final messages = snapshot.data!.docs;
+                final messages = snapshot.data?.docs ?? [];
 
                 if (messages.isEmpty) {
                   return const Center(
-                    child: Text('No messages yet. Start the conversation.'),
+                    child: Text(
+                      'No messages yet. Start the conversation.',
+                    ),
                   );
                 }
 
@@ -111,23 +167,31 @@ class _ChatPageState extends State<ChatPage> {
                   padding: const EdgeInsets.all(12),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
-                    final data = messages[index].data() as Map<String, dynamic>;
-                    final bool isMe = data['senderId'] == currentUser.uid;
+                    final data = messages[index].data()
+                        as Map<String, dynamic>;
+
+                    final bool isMe =
+                        data['senderId'] == currentUser.uid;
 
                     return Align(
-                      alignment:
-                          isMe ? Alignment.centerRight : Alignment.centerLeft,
+                      alignment: isMe
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 10),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: isMe ? Colors.blue : Colors.grey.shade300,
+                          color: isMe
+                              ? Colors.blue
+                              : Colors.grey.shade300,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          data['message'] ?? '',
+                          data['message']?.toString() ?? '',
                           style: TextStyle(
-                            color: isMe ? Colors.white : Colors.black,
+                            color: isMe
+                                ? Colors.white
+                                : Colors.black,
                           ),
                         ),
                       ),
@@ -147,11 +211,24 @@ class _ChatPageState extends State<ChatPage> {
                     decoration: const InputDecoration(
                       hintText: 'Type a message...',
                     ),
+                    onSubmitted: (_) {
+                      if (!isSending) {
+                        sendMessage();
+                      }
+                    },
                   ),
                 ),
                 IconButton(
-                  onPressed: sendMessage,
-                  icon: const Icon(Icons.send),
+                  onPressed: isSending ? null : sendMessage,
+                  icon: isSending
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Icon(Icons.send),
                 ),
               ],
             ),
